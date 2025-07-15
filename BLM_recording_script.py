@@ -40,7 +40,7 @@ if hdwf.value == 0:
 print("Device opened")
 
 # Set up waveform generator: sine wave
-waveform_generator = False
+waveform_generator = True
 if waveform_generator:
     frequency = 1000  # 1 kHz
     amplitude = 1.0   # 1 V peak
@@ -80,13 +80,16 @@ dwf.FDwfAnalogInBufferSizeInfo(hdwf, byref(min_buf), byref(max_buf))
 
 print(f"Minimum buffer size: {min_buf.value}")
 print(f"Maximum buffer size: {max_buf.value}")
-buffer_size = max_buf.value
+
+buffer_size = max_buf.value # Number of samples per channel
 dwf.FDwfAnalogInBufferSizeSet(hdwf, c_int(buffer_size))
 
 # Enable both channels
 for ch in [0, 1, 2, 3]:
     dwf.FDwfAnalogInChannelEnableSet(hdwf, c_int(ch), c_bool(True))
     dwf.FDwfAnalogInChannelRangeSet(hdwf, c_int(ch), c_double(5.0))
+    # Set input impedance to 50 Ohm
+    dwf.FDwfAnalogInChannelImpedanceSet(hdwf, c_int(ch), c_double(50))
 
 # Set up trigger: rising edge on CH1
 dwf.FDwfAnalogInTriggerSourceSet(hdwf, trigsrcDetectorAnalogIn)
