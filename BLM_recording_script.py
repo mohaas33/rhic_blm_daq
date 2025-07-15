@@ -70,7 +70,7 @@ if waveform_generator:
 # Set up analog input
 sample_rate = 250e6     # 100 MS/s
 #buffer_size = 8192      # Number of samples per channel
-trigger_level = 0.5     # Trigger threshold in volts
+trigger_level = 0.1     # Trigger threshold in volts
 
 dwf.FDwfAnalogInFrequencySet(hdwf, c_double(sample_rate))
 # Query buffer size limits
@@ -110,7 +110,7 @@ samples_ch3 = (c_double * buffer_size)()
 samples_ch4 = (c_double * buffer_size)()
 
 # Output directory
-outdir = "waveforms_npz"
+outdir = "C:/Users/shulg/OneDrive - Brookhaven National Laboratory/Work/BLM_data/waveforms_npz/"+ datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')
 os.makedirs(outdir, exist_ok=True)
 
 #t = np.arange(buffer_size) / sample_rate
