@@ -1,5 +1,7 @@
 import time
 import numpy as np 
+import matplotlib.pyplot as plt
+
 from ctypes import *
 from dwfconstants import *  # Import constants from the WaveForms SDK
 import os
@@ -20,6 +22,13 @@ else:
     # on Linux
     dwf = cdll.LoadLibrary("libdwf.so")
 
+
+
+plot_test = False
+trigger_chn = 0
+sample_rate = 375e6     # 100 MS/s
+buffer_size = 1_000_000      # Number of samples per channel
+trigger_level = 0.5    # Trigger threshold in volts
 # Open device
 hdwf = c_int()
 trigger_conditions = c_int()
@@ -38,9 +47,10 @@ if hdwf.value == 0:
     quit()
 
 print("Device opened")
+dwf.FDwfDeviceAutoConfigureSet(hdwf, c_int(0)) # 0 = the device will only be configured when FDwf###Configure is calle
 
 # Set up waveform generator: sine wave
-waveform_generator = True
+waveform_generator = False
 if waveform_generator:
     frequency = 1000  # 1 kHz
     amplitude = 1.0   # 1 V peak
@@ -67,11 +77,20 @@ if waveform_generator:
     else:
         print(f"Unknown coupling: {coupling.value}")
 
-# Set up analog input
-sample_rate = 250e6     # 100 MS/s
-#buffer_size = 8192      # Number of samples per channel
-trigger_level = 0.1     # Trigger threshold in volts
 
+# Enable channels
+for ch in [0, 1, 2, 3]:
+    dwf.FDwfAnalogInChannelEnableSet(hdwf, c_int(ch), c_bool(True))
+    if ch==0:
+        dwf.FDwfAnalogInChannelRangeSet(hdwf, c_int(ch), c_double(5))
+    else:
+        dwf.FDwfAnalogInChannelRangeSet(hdwf, c_int(ch), c_double(1))
+    # Set input impedance to 50 Ohm
+    dwf.FDwfAnalogInChannelImpedanceSet(hdwf, c_int(ch), c_double(50))
+
+# Set up analog input
+
+dwf.FDwfAnalogInAcquisitionModeSet(hdwf, acqmodeRecord)
 dwf.FDwfAnalogInFrequencySet(hdwf, c_double(sample_rate))
 # Query buffer size limits
 min_buf = c_int()
@@ -81,27 +100,26 @@ dwf.FDwfAnalogInBufferSizeInfo(hdwf, byref(min_buf), byref(max_buf))
 print(f"Minimum buffer size: {min_buf.value}")
 print(f"Maximum buffer size: {max_buf.value}")
 
-buffer_size = max_buf.value # Number of samples per channel
+#buffer_size = max_buf.value # Number of samples per channel
+#buffer_size = 10000 # Number of samples per channel
 dwf.FDwfAnalogInBufferSizeSet(hdwf, c_int(buffer_size))
 
-# Enable both channels
-for ch in [0, 1, 2, 3]:
-    dwf.FDwfAnalogInChannelEnableSet(hdwf, c_int(ch), c_bool(True))
-    dwf.FDwfAnalogInChannelRangeSet(hdwf, c_int(ch), c_double(5.0))
-    # Set input impedance to 50 Ohm
-    dwf.FDwfAnalogInChannelImpedanceSet(hdwf, c_int(ch), c_double(50))
+
 
 # Set up trigger: rising edge on CH1
 dwf.FDwfAnalogInTriggerSourceSet(hdwf, trigsrcDetectorAnalogIn)
 dwf.FDwfAnalogInTriggerAutoTimeoutSet(hdwf, c_double(0))  # Wait indefinitely
 dwf.FDwfAnalogInTriggerTypeSet(hdwf, trigtypeEdge)
-dwf.FDwfAnalogInTriggerChannelSet(hdwf, c_int(0))  # Channel 1
+dwf.FDwfAnalogInTriggerChannelSet(hdwf, c_int(trigger_chn))  # Channel 1
 dwf.FDwfAnalogInTriggerLevelSet(hdwf, c_double(trigger_level))
 dwf.FDwfAnalogInTriggerConditionSet(hdwf, trigcondRisingPositive)
 
 # Set trigger position: 50% of buffer before trigger
-trigger_position = -0.5 * (buffer_size / sample_rate)
-dwf.FDwfAnalogInTriggerPositionSet(hdwf, c_double(trigger_position))
+#trigger_position = -0.5 * (buffer_size / sample_rate)
+#dwf.FDwfAnalogInTriggerPositionSet(hdwf, c_double(trigger_position))
+
+#dwf.FDwfAnalogInConfigure(hdwf, c_int(1), c_int(0))
+#time.sleep(2)
 
 # Allocate buffers
 samples_ch1 = (c_double * buffer_size)()
@@ -131,7 +149,7 @@ try:
                 break
             time.sleep(0.01)
 
-        # Read both channels
+        # Read all channels
         dwf.FDwfAnalogInStatusData(hdwf, c_int(0), samples_ch1, buffer_size)
         dwf.FDwfAnalogInStatusData(hdwf, c_int(1), samples_ch2, buffer_size)
         dwf.FDwfAnalogInStatusData(hdwf, c_int(2), samples_ch3, buffer_size)
@@ -142,11 +160,22 @@ try:
         ch3 = np.fromiter(samples_ch3, dtype=np.float64)
         ch4 = np.fromiter(samples_ch4, dtype=np.float64)
         timestamp = datetime.datetime.now().isoformat()
+        if plot_test:
+            # Plot results (example for channel 1)
+            time_axis = np.arange(buffer_size) / sample_rate
+            #plt.plot(time_axis * 1e6, channels_data[0])  # Time in microseconds
+            plt.plot(time_axis * 1e6, samples_ch1)  # Time in microseconds
+            plt.plot(time_axis * 1e6, samples_ch2)  # Time in microseconds
+            plt.title("Channel 1 Scope Data at 250 MS/s")
+            plt.xlabel("Time (ns)")
+            plt.ylabel("Voltage (V)")
+            plt.grid(True)
+            plt.show()
 
         # Save as compressed npz
         filename = os.path.join(outdir, f"waveform_{i:05d}.npz")
         #np.savez_compressed(filename, ch1=ch1, ch2=ch2, timestamp=timestamp)
-        np.savez_compressed(filename, ch1=ch1, ch2=ch2, ch3=ch3, ch4=ch4, timestamp=timestamp, sample_rate=sample_rate, trigger_level=trigger_level, buffer_size=buffer_size)
+        np.savez_compressed(filename, ch1=ch1, ch2=ch2, ch3=ch3, ch4=ch4, timestamp=timestamp, sample_rate=sample_rate, buffer_size=buffer_size, trigger_chn=trigger_chn, trigger_level=trigger_level)
         print(f"Saved: {filename}")
         i += 1
 
