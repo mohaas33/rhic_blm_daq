@@ -3,10 +3,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
 from daq_utils import analyze_buffer
-
+import time
 # Define base path
 #input_dir = r"/Users/evgenyshulga/Library/CloudStorage/OneDrive-BrookhavenNationalLaboratory/Work/BLM_data/waveforms_npz/2025-07-17_10-04-05/"
-input_dir = r"/Users/evgenyshulga/Library/CloudStorage/OneDrive-BrookhavenNationalLaboratory/Work/BLM_data/waveforms_npz/2025-07-16_16-22-40/"
+input_dir = r"C:/Users/shulg/OneDrive - Brookhaven National Laboratory/Work/BLM_data/waveforms_npz/2025-07-16_16-22-40/"
 base_path = r"./"
 # Step 2: Load first 10 files
 files = sorted([f for f in os.listdir(input_dir) if f.endswith(".npz")])[-100:]
@@ -33,6 +33,7 @@ for file in files:
     for ich, ch in enumerate(channels):
         channels[ch] = np.array(channels[ch])  # shape: (10, buffer_size)
         print(channels[ch][0])
+        time.sleep(10)
         result = analyze_buffer(
                 channels[ch][0],
                 channels['ch1'][0],
