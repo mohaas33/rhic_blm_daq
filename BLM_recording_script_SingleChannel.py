@@ -15,9 +15,9 @@ from daq_utils import analyze_buffer
 
 # total arguments
 n = len(argv)
-
-if n<2:
-    print("Not enough input variables: trigger_chn trigger_level")
+print(argv)
+if n<3:
+    print("Not enough input variables: trigger_chn trigger_level ch_label")
     quit()    
 
 # Load DWF
@@ -34,13 +34,14 @@ else:
 
 
 
-plot_test = True
+plot_test = False
 trigger_chn = int(argv[1])
-sample_rate = 250e6 #375e6     # 100 MS/s
+sample_rate = 750e6     # 100 MS/s
 buffer_size = 1_000_000      # Number of samples per channel
 trigger_level = float(argv[2])    # Trigger threshold in volts
 #trigger_level1 = 0.0012    # Trigger threshold in volts
 #trigger_level2 = 0.002    # Trigger threshold in volts
+ch_label = argv[3]
 # Open device
 hdwf = c_int()
 trigger_conditions = c_int()
@@ -75,28 +76,33 @@ if waveform_generator:
 
     print(f"Started sine wave on Wavegen Channel 1: {frequency} Hz, {amplitude} V")
 
-    coupling = c_int()
-    channel = 0  # Channel 1 (0-indexed)
+coupling = c_int()
+channel = 0  # Channel 1 (0-indexed)
 
-    # Call the function
-    dwf.FDwfAnalogInChannelCouplingGet(hdwf, c_int(channel), byref(coupling))
+# Call the function
+dwf.FDwfAnalogInChannelCouplingGet(hdwf, c_int(channel), byref(coupling))
 
-    # Interpret result
-    if coupling.value == DwfAnalogCouplingDC:
-        print("Channel coupling: DC")
-    elif coupling.value == DwfAnalogCouplingAC:
-        print("Channel coupling: AC")
-    else:
-        print(f"Unknown coupling: {coupling.value}")
+# Interpret result
+if coupling.value == DwfAnalogCouplingDC:
+    print("Channel coupling: DC")
+elif coupling.value == DwfAnalogCouplingAC:
+    print("Channel coupling: AC")
+#else:
+print(f"Unknown coupling: {coupling.value}")
 
 
 # Enable channels
 for ch in [0, trigger_chn]:
     dwf.FDwfAnalogInChannelEnableSet(hdwf, c_int(ch), c_bool(True))
+    dwf.FDwfAnalogInChannelCouplingSet(hdwf, c_int(ch), DwfAnalogCouplingDC) #DC coupling
     if ch==0:
         dwf.FDwfAnalogInChannelRangeSet(hdwf, c_int(ch), c_double(5))
-    else:
+    if ch==1:
         dwf.FDwfAnalogInChannelRangeSet(hdwf, c_int(ch), c_double(0.5))
+    if ch==2:
+        dwf.FDwfAnalogInChannelRangeSet(hdwf, c_int(ch), c_double(0.01))
+    if ch==3:
+        dwf.FDwfAnalogInChannelRangeSet(hdwf, c_int(ch), c_double(0.01))
     # Set input impedance to 50 Ohm
     dwf.FDwfAnalogInChannelImpedanceSet(hdwf, c_int(ch), c_double(50))
 
@@ -122,7 +128,7 @@ dwf.FDwfAnalogInBufferSizeSet(hdwf, c_int(buffer_size))
 dwf.FDwfAnalogInTriggerSourceSet(hdwf, trigsrcDetectorAnalogIn)
 dwf.FDwfAnalogInTriggerAutoTimeoutSet(hdwf, c_double(0))  # Wait indefinitely
 dwf.FDwfAnalogInTriggerTypeSet(hdwf, trigtypeEdge)
-dwf.FDwfAnalogInTriggerChannelSet(hdwf, c_int(trigger_chn))  # Channel 1
+dwf.FDwfAnalogInTriggerChannelSet(hdwf, c_int(trigger_chn))  # Channel set 
 dwf.FDwfAnalogInTriggerLevelSet(hdwf, c_double(trigger_level))
 dwf.FDwfAnalogInTriggerConditionSet(hdwf, trigcondRisingPositive)
 
@@ -178,8 +184,8 @@ try:
             #ch2 = np.fromiter(samples_ch2, dtype=np.float64)
             #ch3 = np.fromiter(samples_ch3, dtype=np.float64)
             #ch4 = np.fromiter(samples_ch4, dtype=np.float64)
-        print(channels_wf[0])
-        print(channels_wf[1])
+
+        #Get triggered peak position
         result = analyze_buffer(
             channels_wf[1],
             channels_wf[0], 
@@ -211,11 +217,33 @@ try:
         peaks = pd.DataFrame(result)
 
         # Save as compressed npz
-        filename = os.path.join(outdir, f"waveform_{i:05d}.npz")
+        filename = os.path.join(outdir, f"waveform_{i:05d}_{ch_label}.npz")
         #np.savez_compressed(filename, ch1=ch1, ch2=ch2, timestamp=timestamp)
-        np.savez_compressed(filename, peaks=peaks, ch1=channels_wf[0], ch2=channels_wf[1], timestamp=timestamp, sample_rate=sample_rate, buffer_size=buffer_size, trigger_chn=trigger_chn, trigger_level=trigger_level)
-        print(peaks)
+        np.savez_compressed(filename, peaks=peaks, 
+                            ch1=channels_wf[0], 
+                            ch2=channels_wf[1], 
+                            timestamp=timestamp, 
+                            sample_rate=sample_rate, 
+                            buffer_size=buffer_size, 
+                            trigger_chn=trigger_chn, 
+                            trigger_level=trigger_level
+                            )
+        filename_peaks = os.path.join(outdir, f"peak_{i:05d}_{ch_label}.npz")
+        np.savez_compressed(filename_peaks, peak_indicies  = peaks['peak_indicies'], 
+                            peak_heights = peaks['peak_heights'], 
+                            widths = peaks['widths'],
+                            dist_to_revsig = peaks['dist_to_revsig'],
+                            integrals      = peaks['integrals'], 
+                            timestamp=timestamp, 
+                            sample_rate=sample_rate, 
+                            buffer_size=buffer_size, 
+                            trigger_chn=trigger_chn, 
+                            trigger_level=trigger_level
+                            )
+
+        #print(peaks)
         print(f"Saved: {filename}")
+        print(f"Saved: {filename_peaks}")
         i += 1
 
 

@@ -24,9 +24,9 @@ else:
 
 
 
-plot_test = False
+plot_test = True
 trigger_chn = 1
-sample_rate = 250e6 #375e6     # 100 MS/s
+sample_rate = 350e6 #375e6     # 100 MS/s
 buffer_size = 1_000_000      # Number of samples per channel
 trigger_level = 0.04    # Trigger threshold in volts
 #trigger_level1 = 0.0012    # Trigger threshold in volts
@@ -84,9 +84,13 @@ if waveform_generator:
 for ch in [0, 1, 2, 3]:
     dwf.FDwfAnalogInChannelEnableSet(hdwf, c_int(ch), c_bool(True))
     if ch==0:
-        dwf.FDwfAnalogInChannelRangeSet(hdwf, c_int(ch), c_double(4))
-    else:
+        dwf.FDwfAnalogInChannelRangeSet(hdwf, c_int(ch), c_double(5))
+    if ch==1:
         dwf.FDwfAnalogInChannelRangeSet(hdwf, c_int(ch), c_double(0.5))
+    if ch==2:
+        dwf.FDwfAnalogInChannelRangeSet(hdwf, c_int(ch), c_double(0.01))
+    if ch==3:
+        dwf.FDwfAnalogInChannelRangeSet(hdwf, c_int(ch), c_double(0.01))
     # Set input impedance to 50 Ohm
     dwf.FDwfAnalogInChannelImpedanceSet(hdwf, c_int(ch), c_double(50))
 
@@ -117,8 +121,8 @@ dwf.FDwfAnalogInTriggerLevelSet(hdwf, c_double(trigger_level))
 dwf.FDwfAnalogInTriggerConditionSet(hdwf, trigcondRisingPositive)
 
 # Set trigger position: 50% of buffer before trigger
-trigger_position = -0.5 * (buffer_size / sample_rate)
-dwf.FDwfAnalogInTriggerPositionSet(hdwf, c_double(trigger_position))
+#trigger_position = -0.5 * (buffer_size / sample_rate)
+#dwf.FDwfAnalogInTriggerPositionSet(hdwf, c_double(trigger_position))
 
 #dwf.FDwfAnalogInConfigure(hdwf, c_int(1), c_int(0))
 #time.sleep(2)
