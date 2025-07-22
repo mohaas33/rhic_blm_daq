@@ -34,9 +34,9 @@ else:
 
 
 
-plot_test = False
+plot_test = True#False
 trigger_chn = int(argv[1])
-sample_rate = 750e6     # 100 MS/s
+sample_rate = 2*750e6     # 100 MS/s
 buffer_size = 1_000_000      # Number of samples per channel
 trigger_level = float(argv[2])    # Trigger threshold in volts
 #trigger_level1 = 0.0012    # Trigger threshold in volts
@@ -192,7 +192,7 @@ try:
             0.5,
             trigger_level ,
             1,
-            1,
+            2,
             [1,2],
         )
 
