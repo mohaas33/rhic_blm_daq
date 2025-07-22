@@ -20,7 +20,7 @@ with open(list_file, 'r') as f:
 print('Number of directories: ', len(directories))
 dirN = 0
 # Loop over each directory
-for dir_path in directories[:48]:
+for dir_path in directories:
     dirN+=1
     print(f'{dirN}/{len(directories)}')
     try:
