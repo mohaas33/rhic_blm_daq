@@ -7,15 +7,16 @@ import pandas as pd
 def get_df(ch_match = "peak*CH1.npz"):
     # Define base path
     base_path = r"C:/Users/shulg/OneDrive - Brookhaven National Laboratory/Work/BLM_data/waveforms_npz/"
+    base_path = r"/Users/evgenyshulga/Library/CloudStorage/OneDrive-BrookhavenNationalLaboratory/Work/BLM_data/waveforms_npz/"
     # Base directory
     base_dir = Path(base_path)
     # Time window setup
     now = datetime.now()
-    target_time = now - timedelta(hours=2)  # 1 hour ago
-    time_window_start = target_time - timedelta(minutes=60)
-    time_window_end = target_time + timedelta(minutes=60)
+    target_time = now - timedelta(hours=3)  # N hours ago
+    time_window_start = target_time - timedelta(minutes=10)
+    time_window_end = target_time + timedelta(minutes=10)
 
-    # Regex pattern for datetime in folder name: e.g., 20250718_1415
+    # Regex pattern for datetime in folder name: e.g., 2025-07-21_03-25-57
     datetime_pattern = re.compile(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}')
 
 
@@ -26,7 +27,7 @@ def get_df(ch_match = "peak*CH1.npz"):
         #print(subdir)
         if subdir.is_dir():
             match = datetime_pattern.search(subdir.name)
-            print(subdir.name)
+            #print(subdir.name)
             if match:
                 datetime_str  = match.group()
                 try:
@@ -41,7 +42,8 @@ def get_df(ch_match = "peak*CH1.npz"):
     all_data = []
     # Print full paths of matching files
     for file_path in matching_files:
-        d = np.load(file_path)
+        print(file_path)
+        #d = np.load(file_path)
         with np.load(file_path) as data:
             # Assuming each .npz has 'array1' and 'array2'
             # and we want them as columns in the DataFrame
