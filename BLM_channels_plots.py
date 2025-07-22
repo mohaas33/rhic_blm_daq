@@ -7,14 +7,14 @@ import pandas as pd
 def get_df(ch_match = "peak*CH1.npz"):
     # Define base path
     base_path = r"C:/Users/shulg/OneDrive - Brookhaven National Laboratory/Work/BLM_data/waveforms_npz/"
-    base_path = r"/Users/evgenyshulga/Library/CloudStorage/OneDrive-BrookhavenNationalLaboratory/Work/BLM_data/waveforms_npz/"
+    #base_path = r"/Users/evgenyshulga/Library/CloudStorage/OneDrive-BrookhavenNationalLaboratory/Work/BLM_data/waveforms_npz/"
     # Base directory
     base_dir = Path(base_path)
     # Time window setup
     now = datetime.now()
     target_time = now - timedelta(hours=3)  # N hours ago
-    time_window_start = target_time - timedelta(minutes=10)
-    time_window_end = target_time + timedelta(minutes=10)
+    time_window_start = target_time - timedelta(minutes=60)
+    time_window_end = target_time + timedelta(minutes=60)
 
     # Regex pattern for datetime in folder name: e.g., 2025-07-21_03-25-57
     datetime_pattern = re.compile(r'\d{4}-\d{2}-\d{2}_\d{2}-\d{2}-\d{2}')
