@@ -9,7 +9,7 @@ def parse_array(s):
     return np.fromstring(s.strip("[]"), sep=' ')
 
 # Path to your CSV
-date_string = '2025-07-20' 
+date_string = '2025-07-22' 
 csv_path = f'peaks_{date_string}.csv'
 
 # Load the CSV into a DataFrame
@@ -18,25 +18,78 @@ df_ini = pd.read_csv(csv_path)
 # Preview the first few rows
 print(df_ini.head())
 
-# Helper function to parse string arrays into Python lists of floats or ints
-def parse_array_str(s):
-    s = s.strip('[]')
-    # split by space, handle empty string case
-    if s == '':
-        return []
-    # Try to convert to int if possible else float
-    items = s.split()
-    try:
-        return [int(i) for i in items]
-    except ValueError:
-        return [float(i) for i in items]
-
-# Columns that contain these array-like strings
+## Helper function to parse string arrays into Python lists of floats or ints
+#def parse_array_str(s):
+#    s = s.strip('[]')
+#    # split by space, handle empty string case
+#    if s == '':
+#        return []
+#    # Try to convert to int if possible else float
+#    items = s.split()
+#    try:
+#        return [int(i) for i in items]
+#    except ValueError:
+#        return [float(i) for i in items]
+#
+## Columns that contain these array-like strings
+#array_cols = ['peak_indicies', 'peak_heights', 'widths', 'dist_to_revsig', 'integrals']
+#
+## Parse each of those columns
+#for col in array_cols:
+#    df_ini[col] = df_ini[col].apply(parse_array_str)
+# Your array-like columns
 array_cols = ['peak_indicies', 'peak_heights', 'widths', 'dist_to_revsig', 'integrals']
 
-# Parse each of those columns
+# Step 1: Parse the strings into lists
+def parse_array_str(s):
+    if not isinstance(s, str):
+        return []
+    s = s.strip('[]').strip()
+    if not s:
+        return []
+    return s.split()
+
 for col in array_cols:
     df_ini[col] = df_ini[col].apply(parse_array_str)
+
+# Step 2: Clean and align arrays row-by-row
+def clean_row(row):
+    arrays = {col: row[col] for col in array_cols}
+    
+    # Mark valid indices based on whether 'peak_indicies' are integers
+    valid_indices = []
+    for i, val in enumerate(arrays['peak_indicies']):
+        try:
+            int(val)
+            valid_indices.append(i)
+        except ValueError:
+            continue
+
+    # Now filter each array to keep only valid indices
+    for col in array_cols:
+        arr = arrays[col]
+        arrays[col] = [arr[i] for i in valid_indices if i < len(arr)]
+
+    # Optional: convert to int/float
+    try:
+        arrays['peak_indicies'] = [int(x) for x in arrays['peak_indicies']]
+    except:
+        arrays['peak_indicies'] = []
+    try:
+        arrays['peak_heights'] = [float(x) for x in arrays['peak_heights']]
+        arrays['widths'] = [float(x) for x in arrays['widths']]
+        arrays['dist_to_revsig'] = [float(x) for x in arrays['dist_to_revsig']]
+        arrays['integrals'] = [float(x) for x in arrays['integrals']]
+    except:
+        pass  # You can choose to drop or log here
+
+    # Return updated row
+    for col in array_cols:
+        row[col] = arrays[col]
+    return row
+
+# Apply row cleaning
+df_ini = df_ini.apply(clean_row, axis=1)
 
 # Now explode each of those columns simultaneously
 # First, ensure that each list in array columns has the same length per row
