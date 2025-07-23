@@ -34,7 +34,7 @@ else:
 
 
 
-plot_test = True#False
+plot_test = False
 trigger_chn = int(argv[1])
 sample_rate = 2*750e6     # 100 MS/s
 buffer_size = 1_000_000      # Number of samples per channel
@@ -217,17 +217,19 @@ try:
         peaks = pd.DataFrame(result)
 
         # Save as compressed npz
-        filename = os.path.join(outdir, f"waveform_{i:05d}_{ch_label}.npz")
-        #np.savez_compressed(filename, ch1=ch1, ch2=ch2, timestamp=timestamp)
-        np.savez_compressed(filename, peaks=peaks, 
-                            ch1=channels_wf[0], 
-                            ch2=channels_wf[1], 
-                            timestamp=timestamp, 
-                            sample_rate=sample_rate, 
-                            buffer_size=buffer_size, 
-                            trigger_chn=trigger_chn, 
-                            trigger_level=trigger_level
-                            )
+        if len(peaks['peak_heights'])>1:
+            filename = os.path.join(outdir, f"waveform_{i:05d}_{ch_label}.npz")
+            #np.savez_compressed(filename, ch1=ch1, ch2=ch2, timestamp=timestamp)
+            np.savez_compressed(filename, peaks=peaks, 
+                                ch1=channels_wf[0], 
+                                ch2=channels_wf[1], 
+                                timestamp=timestamp, 
+                                sample_rate=sample_rate, 
+                                buffer_size=buffer_size, 
+                                trigger_chn=trigger_chn, 
+                                trigger_level=trigger_level
+                                )
+            print(f"Saved: {filename}")
         filename_peaks = os.path.join(outdir, f"peak_{i:05d}_{ch_label}.npz")
         np.savez_compressed(filename_peaks, peak_indicies  = peaks['peak_indicies'], 
                             peak_heights = peaks['peak_heights'], 
@@ -242,7 +244,7 @@ try:
                             )
 
         #print(peaks)
-        print(f"Saved: {filename}")
+        
         print(f"Saved: {filename_peaks}")
         i += 1
 

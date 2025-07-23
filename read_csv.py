@@ -9,7 +9,8 @@ def parse_array(s):
     return np.fromstring(s.strip("[]"), sep=' ')
 
 # Path to your CSV
-csv_path = 'peaks_2025-07-18.csv'
+date_string = '2025-07-20' 
+csv_path = f'peaks_{date_string}.csv'
 
 # Load the CSV into a DataFrame
 df_ini = pd.read_csv(csv_path)
@@ -57,34 +58,36 @@ print(df['dist_to_revsig'])
 #df['dist_to_revsig_val'] = df['dist_to_revsig'].apply(lambda x: np.fromstring(x.strip('[]'), sep=' ').tolist())
 #df['peak_heights_val']   = df['peak_heights'].apply(lambda x: np.fromstring(x.strip('[]'), sep=' ').tolist())
 
-df['timestamp'] = pd.to_datetime(df['timestamp'])
-
-# Count occurrences per 16 minutes for each channel
+#df['timestamp'] = pd.to_datetime(df['timestamp'])
+df['timestamp'] = pd.to_datetime(df['timestamp'], errors='coerce')
+bad_timestamps = df[df['timestamp'].isna()]
+print("Bad timing: ",bad_timestamps)
+# Count occurrences per 2 minutes for each channel
 counts = df.groupby([
-    pd.Grouper(key='timestamp', freq='16min'),  # round timestamps to 16-min bins
+    pd.Grouper(key='timestamp', freq='12min'),  # round timestamps to 12-min bins
     'ch'
 ]).size().reset_index(name='count')
 
 
-# Optional: calculate rate per minute (divide by 16)
-counts['rate_per_min'] = counts['count'] / (16)
-counts['rate_per_sec'] = counts['count'] / (16*60)
+# Optional: calculate rate per minute (divide by 12)
+counts['rate_per_min'] = counts['count'] / (12/3)
+counts['rate_per_sec'] = counts['count'] / (12/3*60)
 
 
 plt.figure(figsize=(8, 5))
-
+col = {1:'blue', 2:'red', 3:'darkgreen'}
 for ch in counts['ch'].unique():
     df_ch = counts[counts['ch'] == ch]
-    plt.plot(df_ch['timestamp'], df_ch['rate_per_sec'], label=f"Ch {ch}")
+    plt.plot(df_ch['timestamp'], df_ch['rate_per_sec'], label=f"Ch {ch}", color=col[ch],  alpha=0.6)
 
 plt.xlabel('Time')
 plt.ylabel('Rate [Hz]')
-plt.title('Channel Activity Rate (16 min bins)')
+plt.title('Channel Activity Rate (12 min bins)')
 plt.grid(True)
 plt.legend()
 plt.tight_layout()
 plt.xticks(rotation=45)
-plt.savefig("rate_vs_time.png", dpi=300)
+plt.savefig(f"rate_vs_time_{date_string}.png", dpi=300)
 
 plt.show()
 
@@ -104,11 +107,12 @@ plt.xlabel('Distance to RevSig [ns]')
 plt.ylabel('Amplitude [V]')
 plt.title('Peak Height vs Distance to RevSig')
 plt.grid(True)
+plt.xlim(-1, 13000)
 plt.yscale('log')
 plt.legend()
 
 plt.tight_layout()
-plt.savefig("amp_vs_revsig.png", dpi=300)
+plt.savefig(f"amp_vs_revsig_{date_string}.png", dpi=300)
 
 plt.show()
 
@@ -125,14 +129,14 @@ plt.yscale('log')
 plt.legend()
 
 plt.tight_layout()
-plt.savefig("amp_vs_time.png", dpi=300)
+plt.savefig(f"amp_vs_time_{date_string}.png", dpi=300)
 
 plt.show()
 
 # Flatten the dist_to_revsig values (assumes each cell is a list)
-all_distances_1 = -1.33*df[df['ch']==1]['dist_to_revsig'].explode().astype(float)
-all_distances_2 = -1.33*df[df['ch']==2]['dist_to_revsig'].explode().astype(float)
-all_distances_3 = -1.33*df[df['ch']==3]['dist_to_revsig'].explode().astype(float)
+all_distances_1 = -1.33*df[(df['ch']==1 ) & ( df['dist_to_revsig']<=0)]['dist_to_revsig'].explode().astype(float)
+all_distances_2 = -1.33*df[(df['ch']==2 ) & ( df['dist_to_revsig']<=0)]['dist_to_revsig'].explode().astype(float)
+all_distances_3 = -1.33*df[(df['ch']==3 ) & ( df['dist_to_revsig']<=0)]['dist_to_revsig'].explode().astype(float)
 
 # Plot histogram
 plt.figure(figsize=(8, 5))
@@ -146,7 +150,7 @@ plt.grid(True)
 plt.legend()
 
 plt.tight_layout()
-plt.savefig("revsig.png", dpi=300)
+plt.savefig(f"revsig_{date_string}.png", dpi=300)
 
 plt.show()
 
@@ -165,6 +169,6 @@ plt.yscale('log')
 plt.legend()
 
 plt.tight_layout()
-plt.savefig("amp.png", dpi=300)
+plt.savefig(f"amp_{date_string}.png", dpi=300)
 plt.show()
 

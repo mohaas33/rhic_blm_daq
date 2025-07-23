@@ -5,10 +5,12 @@ import numpy as np
 import pandas as pd
 
 # Path to list of directories
-list_files = ['list_2025-07-19.txt', 'list_2025-07-20.txt', 'list_2025-07-21.txt', ]
+#list_files = ['list_2025-07-19.txt', 'list_2025-07-20.txt', 'list_2025-07-21.txt', ]
+list_files = ['list_2025-07-22.txt']
 
 # Output CSV file
-output_csvs = ['peaks_2025-07-19.csv', 'peaks_2025-07-20.csv', 'peaks_2025-07-21.csv']
+#output_csvs = ['peaks_2025-07-19.csv', 'peaks_2025-07-20.csv', 'peaks_2025-07-21.csv']
+output_csvs = ['peaks_2025-07-22.csv']
 
 for list_file, output_csv in zip(list_files,output_csvs):
     # Storage for all waveforms
