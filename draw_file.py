@@ -1,6 +1,6 @@
 import numpy as np
 
-d = np.load("C:/Users/shulg/OneDrive - Brookhaven National Laboratory/Work/BLM_data/waveforms_npz/2025-07-18_17-10-58\waveform_00000_CH1.npz")
+d = np.load("./waveform_00013_CH1.npz")
 print(d)
 buffer_size = d["buffer_size"]
 sample_rate = d["sample_rate"]
